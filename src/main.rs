@@ -8,10 +8,8 @@ mod path_finder;
 use map::Map;
 use nalgebra::Vector2;
 use path_finder::PathFinder;
-use rand::prelude::*;
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::io::{Write};
 
 fn main() {
     let map = Rc::new(RefCell::new(Map::generate(Vector2::new(32, 32))));
