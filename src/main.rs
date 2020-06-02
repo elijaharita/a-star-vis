@@ -1,76 +1,40 @@
+extern crate nalgebra;
 extern crate rand;
 
+mod map;
+mod map_renderer;
+mod path_finder;
+
+use map::Map;
+use nalgebra::Vector2;
+use path_finder::PathFinder;
 use rand::prelude::*;
-
-#[derive(Clone, Copy)]
-enum TileType {
-    Empty,
-    Solid,
-}
-
-impl TileType {
-    pub fn get_char(self) -> char {
-        match self {
-            TileType::Empty => ' ',
-            TileType::Solid => '#',
-        }
-    }
-}
-
-struct Map {
-    width: usize,
-    height: usize,
-    tiles: Vec<TileType>,
-}
-
-impl Map {
-    pub fn new(width: usize, height: usize) -> Self {
-        let mut map = Self {
-            width,
-            height,
-            tiles: vec![TileType::Empty; width * height]
-        };
-
-        for x in 0..width {
-            map.set_tile(x, 0, TileType::Solid);
-            map.set_tile(x, height - 1, TileType::Solid);
-        }
-        for y in 0..height {
-            map.set_tile(0, y, TileType::Solid);
-            map.set_tile(width - 1, y, TileType::Solid);
-        }
-
-        map
-    }
-
-    pub fn get_tile(&self, x: usize, y: usize) -> TileType {
-        self.tiles[x + y * self.width]
-    }
-
-    pub fn set_tile(&mut self, x: usize, y: usize, tile: TileType) {
-        self.tiles[x + y * self.width] = tile
-    }
-
-    pub fn print(&self) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                print!("{} ", self.get_tile(x, y).get_char())
-            }
-            println!();
-        }
-    }
-}
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::io::{Write};
 
 fn main() {
-    let mut map = Map::new(32, 32);
+    let map = Rc::new(RefCell::new(Map::generate(Vector2::new(64, 64))));
+    let mut path_finder = PathFinder::new(
+        Vector2::new(
+            rand::thread_rng().gen_range(0, map.borrow().size().x),
+            rand::thread_rng().gen_range(0, map.borrow().size().x),
+        ),
+        Vector2::new(
+            rand::thread_rng().gen_range(0, map.borrow().size().x),
+            rand::thread_rng().gen_range(0, map.borrow().size().x),
+        ),
+        map.clone()
+    );
 
-    for _ in 0..25 {
-        map.set_tile(
-            rand::thread_rng().gen_range(0, map.width),
-            rand::thread_rng().gen_range(0, map.height),
-            TileType::Solid,
-        );
+    loop {
+        if let Some(res) = path_finder.iterate() {
+            if res {
+                println!("Path found!");
+                break;
+            }
+        } 
+        std::io::stdout().flush().unwrap();
     }
-
-    map.print();
+    println!("{}",  map_renderer::render_to_string(&map.borrow(), vec![&path_finder]));
 }
