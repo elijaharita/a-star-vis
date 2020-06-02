@@ -16,28 +16,21 @@ use std::io::{Write};
 fn main() {
     let map = Rc::new(RefCell::new(Map::generate(Vector2::new(32, 32))));
     let mut path_finder = PathFinder::new(
-        Vector2::new(
-            rand::thread_rng().gen_range(0, map.borrow().size().x),
-            rand::thread_rng().gen_range(0, map.borrow().size().x),
-        ),
-        Vector2::new(
-            rand::thread_rng().gen_range(0, map.borrow().size().x),
-            rand::thread_rng().gen_range(0, map.borrow().size().x),
-        ),
+        map.borrow().rand_empty_location(),
+        map.borrow().rand_empty_location(),
         map.clone()
     );
 
+    // Loop the iteration until a Some value is returned
     loop {
-        if let Some(res) = path_finder.iterate() {
+        if let Some((res, iterations)) = path_finder.iterate() {
+            println!("{}",  map_renderer::render_to_string(&map.borrow(), vec![&path_finder]));
             if res {
-                println!("Path found!");
-                break;
+                println!("Path found in {} iterations!", iterations);
             } else {
-                println!("Could not find a path");
-                break;
+                println!("Could not find a path after {} iterations", iterations);
             }
-        } 
-        std::io::stdout().flush().unwrap();
+            break;
+        }
     }
-    println!("{}",  map_renderer::render_to_string(&map.borrow(), vec![&path_finder]));
 }

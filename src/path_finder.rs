@@ -6,8 +6,6 @@ use nalgebra::Vector2;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const MAX_ITERATIONS: usize = 250;
-
 fn dist_sq(a: &Vector2<i32>, b: &Vector2<i32>) -> i32 {
     let dx = a.x - b.x;
     let dy = a.y - b.y;
@@ -79,7 +77,12 @@ impl PathFinder {
     }
 
     // Process one iteration of the simulation
-    pub fn iterate(&mut self) -> Option<bool> {
+    // Returns None as long as simulation is in progress
+    // Returns an optional tuple, Some with true if a path was found and false 
+    // otherwise for the first option, and a usize indicating how many 
+    // iterations were taken
+
+    pub fn iterate(&mut self) -> Option<(bool, usize)> {
         // Find open node with lowest f_cost
         let (curr_index, &curr_pos) = match self
             .open
@@ -92,7 +95,7 @@ impl PathFinder {
                     .cmp(&self.get_node(b).unwrap().f_cost())
             }) {
                 Some(curr) => curr,
-                None => return Some(false)
+                None => return Some((false, self.iteration_count))
             };
 
         // Move that node from open to closed
@@ -102,7 +105,7 @@ impl PathFinder {
 
         // If the path has been found, return positive
         if curr_pos == self.end {
-            return Some(true);
+            return Some((true, self.iteration_count));
         }
 
         // Check each neighbor
@@ -129,10 +132,6 @@ impl PathFinder {
 
                 self.open.push(neighbor_pos);
             }
-        }
-
-        if self.iteration_count > MAX_ITERATIONS {
-            return Some(false);
         }
 
         self.iteration_count += 1;
@@ -166,8 +165,8 @@ impl PathFinder {
     fn neighbors(&self, pos: &Vector2<i32>) -> Vec<(Vector2<i32>, Node)> {
         let mut neighbors = Vec::new();
         let &node = self.get_node(pos).expect("That position isn't a node!");
-        for x in std::cmp::max(pos.x - 1, 0)..std::cmp::min(pos.x + 2, self.map.borrow().size().x - 1) {
-            for y in std::cmp::max(pos.y - 1, 0)..std::cmp::min(pos.y + 2, self.map.borrow().size().y - 1) {
+        for x in std::cmp::max(pos.x - 1, 0)..std::cmp::min(pos.x + 2, self.map.borrow().size().x) {
+            for y in std::cmp::max(pos.y - 1, 0)..std::cmp::min(pos.y + 2, self.map.borrow().size().y) {
                 let neighbor_pos = Vector2::new(x, y);
 
                 // Skip self and solid blocks

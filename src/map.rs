@@ -24,7 +24,6 @@ impl Map {
             tiles: vec![Tile::Empty; (size.x * size.y) as usize],
         };
 
-
         // Obstacles
 
         let noise = OpenSimplex::new().set_seed(rand::thread_rng().next_u32());
@@ -43,6 +42,19 @@ impl Map {
         }
 
         map
+    }
+
+    pub fn rand_empty_location(&self) -> Vector2<i32> {
+
+        // Repeatedly random positions
+        loop {
+            let rand_pos = Vector2::new(rand::thread_rng().gen_range(0, self.size.x), rand::thread_rng().gen_range(0, self.size.y));
+
+            // Until an empty tile is located
+            if self.get_tile(&rand_pos) == Tile::Empty {
+                return rand_pos;
+            }
+        }
     }
 
     pub fn size(&self) -> Vector2<i32> {
