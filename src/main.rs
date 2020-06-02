@@ -14,7 +14,7 @@ use std::cell::RefCell;
 use std::io::{Write};
 
 fn main() {
-    let map = Rc::new(RefCell::new(Map::generate(Vector2::new(64, 64))));
+    let map = Rc::new(RefCell::new(Map::generate(Vector2::new(32, 32))));
     let mut path_finder = PathFinder::new(
         Vector2::new(
             rand::thread_rng().gen_range(0, map.borrow().size().x),
@@ -31,6 +31,9 @@ fn main() {
         if let Some(res) = path_finder.iterate() {
             if res {
                 println!("Path found!");
+                break;
+            } else {
+                println!("Could not find a path");
                 break;
             }
         } 

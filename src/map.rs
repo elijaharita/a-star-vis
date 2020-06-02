@@ -3,7 +3,8 @@ extern crate rand;
 extern crate noise;
 
 use nalgebra::Vector2;
-use noise::{NoiseFn, OpenSimplex};
+use noise::{NoiseFn, OpenSimplex, Seedable};
+use rand::prelude::*;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Tile {
@@ -26,7 +27,7 @@ impl Map {
 
         // Obstacles
 
-        let noise = OpenSimplex::new();
+        let noise = OpenSimplex::new().set_seed(rand::thread_rng().next_u32());
 
         for x in 0..size.x {
             for y in 0..size.y {

@@ -6,6 +6,8 @@ use nalgebra::Vector2;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+const MAX_ITERATIONS: usize = 250;
+
 fn dist_sq(a: &Vector2<i32>, b: &Vector2<i32>) -> i32 {
     let dx = a.x - b.x;
     let dy = a.y - b.y;
@@ -17,7 +19,7 @@ pub struct Node {
     h_cost: i32,
     g_cost: i32,
     parent: Option<Vector2<i32>>,
-    open: bool
+    open: bool,
 }
 
 impl Node {
@@ -37,6 +39,7 @@ pub struct PathFinder {
     nodes: Vec<Option<Node>>,
     open: Vec<Vector2<i32>>,
     closed: Vec<Vector2<i32>>,
+    iteration_count: usize
 }
 
 impl PathFinder {
@@ -49,6 +52,7 @@ impl PathFinder {
             nodes: vec![None; node_count],
             open: Vec::new(),
             closed: Vec::new(),
+            iteration_count: 0
         };
 
         // Add first node
@@ -58,7 +62,7 @@ impl PathFinder {
                 g_cost: 0,
                 h_cost: 0,
                 parent: None,
-                open: true
+                open: true,
             }),
         );
         path_finder.open.push(start);
@@ -77,7 +81,7 @@ impl PathFinder {
     // Process one iteration of the simulation
     pub fn iterate(&mut self) -> Option<bool> {
         // Find open node with lowest f_cost
-        let (curr_index, &curr_pos) = self
+        let (curr_index, &curr_pos) = match self
             .open
             .iter()
             .enumerate()
@@ -86,8 +90,10 @@ impl PathFinder {
                     .unwrap()
                     .f_cost()
                     .cmp(&self.get_node(b).unwrap().f_cost())
-            })
-            .expect("Couldn't find a path");
+            }) {
+                Some(curr) => curr,
+                None => return Some(false)
+            };
 
         // Move that node from open to closed
         self.open.remove(curr_index);
@@ -116,12 +122,20 @@ impl PathFinder {
 
             let old_neighbor_node_opt = self.get_node(&neighbor_pos);
 
-            if old_neighbor_node_opt.is_none() || neighbor_node.f_cost() > old_neighbor_node_opt.unwrap().f_cost() {
+            if old_neighbor_node_opt.is_none()
+                || neighbor_node.f_cost() > old_neighbor_node_opt.unwrap().f_cost()
+            {
                 self.set_node(&neighbor_pos, Some(neighbor_node));
 
                 self.open.push(neighbor_pos);
             }
         }
+
+        if self.iteration_count > MAX_ITERATIONS {
+            return Some(false);
+        }
+
+        self.iteration_count += 1;
 
         None
     }
@@ -152,8 +166,8 @@ impl PathFinder {
     fn neighbors(&self, pos: &Vector2<i32>) -> Vec<(Vector2<i32>, Node)> {
         let mut neighbors = Vec::new();
         let &node = self.get_node(pos).expect("That position isn't a node!");
-        for x in pos.x - 1..pos.x + 2 {
-            for y in pos.y - 1..pos.y + 2 {
+        for x in std::cmp::max(pos.x - 1, 0)..std::cmp::min(pos.x + 2, self.map.borrow().size().x - 1) {
+            for y in std::cmp::max(pos.y - 1, 0)..std::cmp::min(pos.y + 2, self.map.borrow().size().y - 1) {
                 let neighbor_pos = Vector2::new(x, y);
 
                 // Skip self and solid blocks
@@ -168,7 +182,7 @@ impl PathFinder {
                         g_cost: node.g_cost + dist_sq(&pos, &neighbor_pos),
                         h_cost: dist_sq(&self.end, &neighbor_pos),
                         parent: Some(*pos),
-                        open: true
+                        open: true,
                     },
                 ));
             }
